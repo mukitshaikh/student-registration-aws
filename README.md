@@ -1,137 +1,155 @@
 # Student Registration Application — AWS Multi-Tier Deployment
 
-A full-stack **Student Registration Application** built with a **React frontend**, **Spring Boot backend**, and **MySQL database**, deployed on **Amazon Web Services (AWS)** using a highly available multi-tier architecture.
+A full-stack **Student Registration Application** built using **React, Spring Boot, and MySQL**, deployed on **Amazon Web Services (AWS)** using a multi-tier architecture.
 
-The application uses private frontend, backend, and database subnets across two Availability Zones, Application Load Balancers, Auto Scaling Groups, Amazon RDS, NAT Gateway, IAM, and AWS Systems Manager Parameter Store.
+The project demonstrates practical implementation of:
 
----
-
-## Table of Contents
-
-- [Project Overview](#project-overview)
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Repository Structure](#repository-structure)
-- [Application Architecture](#application-architecture)
-- [AWS Architecture](#aws-architecture)
-- [VPC and Networking](#vpc-and-networking)
-- [Subnets](#subnets)
-- [Route Tables](#route-tables)
-- [Internet Gateway](#internet-gateway)
-- [NAT Gateway](#nat-gateway)
-- [Security Groups](#security-groups)
-- [Frontend Tier](#frontend-tier)
-- [Backend Tier](#backend-tier)
-- [Database Tier](#database-tier)
-- [Load Balancers](#load-balancers)
-- [Target Groups](#target-groups)
-- [Auto Scaling](#auto-scaling)
-- [AWS Systems Manager Parameter Store](#aws-systems-manager-parameter-store)
-- [IAM](#iam)
-- [API Endpoints](#api-endpoints)
-- [Frontend Deployment](#frontend-deployment)
-- [Backend Deployment](#backend-deployment)
-- [Application Request Flow](#application-request-flow)
-- [Security Architecture](#security-architecture)
-- [Testing](#testing)
-- [Local Development](#local-development)
-- [AWS Deployment Scripts](#aws-deployment-scripts)
-- [Future Improvements](#future-improvements)
-- [Author](#author)
+- AWS VPC networking
+- Public and private subnets
+- Application Load Balancers
+- EC2 Auto Scaling
+- Amazon RDS MySQL
+- NAT Gateway
+- Internet Gateway
+- Security Groups
+- IAM
+- AWS Systems Manager Parameter Store
+- Nginx reverse proxy
+- Custom domain configuration using Route 53
+- Frontend and backend automated EC2 deployment
 
 ---
 
-# Project Overview
+# 🌐 Live Application
 
-This project demonstrates the deployment of a full-stack Student Registration Application on AWS.
+Custom domain:
 
-The system consists of three main application layers:
+```text
+http://amzon.cyou
+```
 
-1. **Frontend Layer**
-   - React
-   - Vite
-   - Nginx
+WWW domain:
 
-2. **Backend Layer**
-   - Java
-   - Spring Boot
-   - Maven
-   - REST API
-   - Spring Data JPA
+```text
+http://www.amzon.cyou
+```
 
-3. **Database Layer**
-   - Amazon RDS
-   - MySQL
-
-The infrastructure is designed so that only the **public Application Load Balancer** is directly accessible from the Internet.
-
-Frontend EC2 instances, backend EC2 instances, the internal backend load balancer, and the RDS database remain inside private subnets.
+> The current deployment uses HTTP. HTTPS/SSL can be added later using AWS Certificate Manager (ACM) and an HTTPS listener on the public Application Load Balancer.
 
 ---
 
-# Features
+# 📌 Project Overview
 
-The application supports:
+This project deploys a full-stack Student Registration Application on AWS.
 
-- Registering students
-- Viewing registered students
-- Deleting students
-- REST API communication
-- Persistent MySQL storage
-- Load-balanced frontend servers
-- Load-balanced backend servers
-- Automatic EC2 instance management through Auto Scaling
-- Multi-Availability-Zone application architecture
-- Private database networking
-- Secure database password retrieval using AWS Systems Manager Parameter Store
+The application contains three main layers:
 
----
-
-# Technology Stack
-
-## Frontend
+### Frontend
 
 - React
-- JavaScript
 - Vite
-- HTML
-- CSS
-- Node.js
-- npm
+- JavaScript
 - Nginx
 
-## Backend
+### Backend
 
 - Java
 - Spring Boot
 - Maven
-- Spring Data JPA
 - REST API
+- Spring Data JPA
 
-## Database
+### Database
 
+- Amazon RDS
 - MySQL
-- Amazon RDS
 
-## AWS
+The infrastructure separates the frontend, backend, and database into dedicated private network tiers.
 
-- Amazon VPC
-- Amazon EC2
-- Application Load Balancer
-- EC2 Auto Scaling
-- Amazon RDS
-- Internet Gateway
-- NAT Gateway
-- Elastic IP
-- Security Groups
-- IAM
-- AWS Systems Manager Parameter Store
-- Launch Templates
-- Target Groups
+Only the **public frontend Application Load Balancer** is exposed to the Internet.
 
 ---
 
-# Repository Structure
+# ✨ Application Features
+
+The application supports:
+
+- Student registration
+- Viewing registered students
+- Deleting students
+- REST API communication
+- Persistent database storage
+- Frontend load balancing
+- Backend load balancing
+- EC2 Auto Scaling
+- Multi-Availability-Zone application deployment
+- Private RDS database
+- Secure database password storage
+- Custom domain access
+
+---
+
+# 🛠 Technology Stack
+
+## Frontend
+
+```text
+React
+Vite
+JavaScript
+HTML
+CSS
+Node.js
+npm
+Nginx
+```
+
+## Backend
+
+```text
+Java
+Spring Boot
+Maven
+Spring Data JPA
+REST API
+```
+
+## Database
+
+```text
+Amazon RDS
+MySQL
+```
+
+## AWS Services
+
+```text
+Amazon VPC
+Amazon EC2
+Application Load Balancer
+EC2 Auto Scaling
+Amazon RDS
+Internet Gateway
+NAT Gateway
+Elastic IP
+Security Groups
+IAM
+AWS Systems Manager Parameter Store
+Route 53
+Launch Templates
+Target Groups
+```
+
+## Source Control
+
+```text
+Git
+GitHub
+```
+
+---
+
+# 📂 Repository Structure
 
 ```text
 student-registration-aws/
@@ -158,132 +176,187 @@ student-registration-aws/
 └── README.md
 ```
 
-The repository contains the complete frontend and backend source code together with the EC2 bootstrap scripts used for AWS deployment.
+The repository contains:
+
+- Complete frontend source code
+- Complete backend source code
+- AWS EC2 bootstrap scripts
+- Git configuration
+- Project documentation
 
 ---
 
-# Application Architecture
+# 🏗 AWS Architecture
+
+The final application architecture is:
 
 ```text
-                    INTERNET
-                        |
-                        |
-                        v
-             +----------------------+
-             |   Public Frontend    |
-             | Application Load     |
-             |      Balancer        |
-             |      HTTP :80        |
-             +----------+-----------+
-                        |
-              +---------+---------+
-              |                   |
-              v                   v
-       +-------------+     +-------------+
-       | Frontend    |     | Frontend    |
-       | EC2         |     | EC2         |
-       | React/Nginx |     | React/Nginx |
-       | AZ-1        |     | AZ-2        |
-       +------+------+     +------+------+
-              |                   |
-              +---------+---------+
-                        |
-                     /api
-                        |
-                        v
-             +----------------------+
-             | Internal Backend     |
-             | Application Load     |
-             | Balancer :8080       |
-             +----------+-----------+
-                        |
-              +---------+---------+
-              |                   |
-              v                   v
-       +-------------+     +-------------+
-       | Backend EC2 |     | Backend EC2 |
-       | Spring Boot |     | Spring Boot |
-       | AZ-1        |     | AZ-2        |
-       | Port 8080   |     | Port 8080   |
-       +------+------+     +------+------+
-              |                   |
-              +---------+---------+
-                        |
-                        v
-                +---------------+
-                | Amazon RDS    |
-                | MySQL         |
-                | Port 3306     |
-                | student_db    |
-                +---------------+
+                         INTERNET
+                             |
+                             |
+                             v
+                       amzon.cyou
+                             |
+                             v
+                       Amazon Route 53
+                             |
+                             v
+              +-----------------------------+
+              | Public Application          |
+              | Load Balancer               |
+              | HTTP :80                    |
+              +-------------+---------------+
+                            |
+                  +---------+---------+
+                  |                   |
+                  v                   v
+          +---------------+   +---------------+
+          | Frontend EC2  |   | Frontend EC2  |
+          | React + Nginx |   | React + Nginx |
+          | us-east-1a    |   | us-east-1b    |
+          | HTTP :80      |   | HTTP :80      |
+          +-------+-------+   +-------+-------+
+                  |                   |
+                  +---------+---------+
+                            |
+                         /api
+                            |
+                            v
+              +-----------------------------+
+              | Internal Application        |
+              | Load Balancer               |
+              | HTTP :8080                  |
+              +-------------+---------------+
+                            |
+                  +---------+---------+
+                  |                   |
+                  v                   v
+          +---------------+   +---------------+
+          | Backend EC2   |   | Backend EC2   |
+          | Spring Boot   |   | Spring Boot   |
+          | us-east-1a    |   | us-east-1b    |
+          | Port 8080     |   | Port 8080     |
+          +-------+-------+   +-------+-------+
+                  |                   |
+                  +---------+---------+
+                            |
+                            | MySQL :3306
+                            v
+                     +-------------+
+                     | Amazon RDS  |
+                     | MySQL       |
+                     | student_db  |
+                     | Private     |
+                     +-------------+
 ```
 
 ---
 
-# AWS Architecture
+# 🔄 Complete Request Flow
 
-AWS Region:
+When a user visits:
 
 ```text
-us-east-1
+http://amzon.cyou
 ```
 
-VPC:
+the request follows:
+
+```text
+User Browser
+      |
+      v
+amzon.cyou
+      |
+      v
+Amazon Route 53
+      |
+      v
+Public Frontend ALB :80
+      |
+      v
+Frontend EC2 :80
+      |
+      v
+React + Nginx
+      |
+      | /api
+      v
+Internal Backend ALB :8080
+      |
+      v
+Backend EC2 :8080
+      |
+      v
+Spring Boot
+      |
+      | MySQL :3306
+      v
+Amazon RDS MySQL
+```
+
+---
+
+# 🌎 AWS Region
+
+The infrastructure is deployed in:
+
+```text
+Region: us-east-1
+US East (N. Virginia)
+```
+
+---
+
+# 🌐 VPC Configuration
+
+A custom VPC was created for the application.
 
 ```text
 Name: studentapp-vpc
 CIDR: 10.0.0.0/16
 ```
 
-The architecture uses **8 subnets across two Availability Zones**.
-
-The subnet groups are:
-
-- 2 Public Subnets
-- 2 Frontend Private Subnets
-- 2 Backend Private Subnets
-- 2 Database Private Subnets
+The VPC provides an isolated network for the complete application infrastructure.
 
 ---
 
-# VPC and Networking
+# 🧩 Subnet Architecture
 
-## VPC
+A total of **8 subnets** were created across **2 Availability Zones**.
 
-```text
-Name: studentapp-vpc
-CIDR: 10.0.0.0/16
-```
-
-The VPC provides network isolation for the entire application infrastructure.
-
----
-
-# Subnets
-
-## Availability Zone — us-east-1a
+## us-east-1a
 
 | Subnet | CIDR | Purpose |
 |---|---|---|
-| public-subnet-1 | 10.0.1.0/24 | Public ALB / NAT |
+| public-subnet-1 | 10.0.1.0/24 | Public resources / NAT |
 | frontend-private-1 | 10.0.3.0/24 | Frontend EC2 |
 | backend-private-1 | 10.0.5.0/24 | Backend EC2 |
 | database-private-1 | 10.0.7.0/24 | Amazon RDS |
 
-## Availability Zone — us-east-1b
+## us-east-1b
 
 | Subnet | CIDR | Purpose |
 |---|---|---|
-| public-subnet-2 | 10.0.2.0/24 | Public ALB |
+| public-subnet-2 | 10.0.2.0/24 | Public resources |
 | frontend-private-2 | 10.0.4.0/24 | Frontend EC2 |
 | backend-private-2 | 10.0.6.0/24 | Backend EC2 |
 | database-private-2 | 10.0.8.0/24 | Amazon RDS |
 
+The architecture therefore separates:
+
+```text
+Public Tier
+Frontend Tier
+Backend Tier
+Database Tier
+```
+
 ---
 
-# Route Tables
+# 🚦 Route Tables
 
-Three route-table groups are used.
+Three route-table configurations are used.
 
 ## Public Route Table
 
@@ -291,7 +364,7 @@ Three route-table groups are used.
 Name: studentapp-public-rt
 ```
 
-Associated with:
+Associated subnets:
 
 ```text
 public-subnet-1
@@ -301,15 +374,13 @@ public-subnet-2
 Routes:
 
 ```text
-10.0.0.0/16  -> local
-0.0.0.0/0    -> Internet Gateway
+10.0.0.0/16 -> local
+0.0.0.0/0   -> Internet Gateway
 ```
-
-This allows Internet-facing AWS resources in the public subnets to communicate with the Internet.
 
 ---
 
-## Private Application Route Table
+# Private Application Route Table
 
 ```text
 Name: studentapp-private-app-rt
@@ -327,23 +398,28 @@ backend-private-2
 Routes:
 
 ```text
-10.0.0.0/16  -> local
-0.0.0.0/0    -> NAT Gateway
+10.0.0.0/16 -> local
+0.0.0.0/0   -> NAT Gateway
 ```
 
-Frontend and backend EC2 instances can therefore initiate outbound Internet connections without being publicly reachable.
+The NAT Gateway allows private application instances to initiate outbound Internet connections.
 
-This is required for operations such as:
+This is necessary for operations such as:
 
-- apt package installation
-- Git repository cloning
-- npm installation
-- Maven dependency downloads
-- AWS API access
+```text
+apt update
+apt install
+git clone
+npm install
+Maven dependency downloads
+AWS API calls
+```
+
+The private instances do not need to accept direct inbound connections from the Internet.
 
 ---
 
-## Database Route Table
+# Database Route Table
 
 ```text
 Name: studentapp-database-rt
@@ -362,11 +438,11 @@ Route:
 10.0.0.0/16 -> local
 ```
 
-There is no default Internet route for the database subnets.
+The database subnet route table does not require a default Internet route for application database communication.
 
 ---
 
-# Internet Gateway
+# 🌍 Internet Gateway
 
 Internet Gateway:
 
@@ -374,17 +450,17 @@ Internet Gateway:
 studentapp-igw
 ```
 
-The Internet Gateway is attached to:
+Attached to:
 
 ```text
 studentapp-vpc
 ```
 
-It provides Internet connectivity for resources using the public route table.
+The Internet Gateway provides Internet connectivity for resources using the public route table.
 
 ---
 
-# NAT Gateway
+# 🔁 NAT Gateway
 
 NAT Gateway:
 
@@ -392,25 +468,21 @@ NAT Gateway:
 studentapp-nat
 ```
 
-The NAT Gateway is located inside:
+Location:
 
 ```text
 public-subnet-1
 ```
 
-It uses an Elastic IP address.
+The NAT Gateway uses an Elastic IP address.
 
-Private frontend and backend instances use the NAT Gateway for outbound Internet connectivity.
-
-The NAT Gateway does **not** make those EC2 instances publicly accessible.
+It provides outbound Internet access for frontend and backend EC2 instances located in private subnets.
 
 ---
 
-# Security Groups
+# 🔐 Security Groups
 
-The application uses separate security groups for each infrastructure layer.
-
-This provides controlled communication between tiers.
+Separate Security Groups were created for each application layer.
 
 ---
 
@@ -428,9 +500,7 @@ TCP 80
 Source: 0.0.0.0/0
 ```
 
-Purpose:
-
-Allows users on the Internet to access the public frontend Application Load Balancer.
+This allows Internet users to reach the frontend load balancer.
 
 ---
 
@@ -448,7 +518,7 @@ TCP 80
 Source: studentapp-public-alb-sg
 ```
 
-Frontend EC2 instances therefore accept web traffic from the public ALB rather than directly from the Internet.
+Frontend instances accept application traffic from the public ALB.
 
 ---
 
@@ -462,11 +532,11 @@ Inbound:
 
 ```text
 Custom TCP
-Port 8080
+Port: 8080
 Source: studentapp-frontend-sg
 ```
 
-Only the frontend tier can send application traffic to the internal backend load balancer.
+The backend load balancer receives API traffic from the frontend tier.
 
 ---
 
@@ -480,11 +550,11 @@ Inbound:
 
 ```text
 Custom TCP
-Port 8080
+Port: 8080
 Source: studentapp-internal-alb-sg
 ```
 
-Backend EC2 instances accept application traffic from the internal backend ALB.
+Backend EC2 instances receive requests from the internal Application Load Balancer.
 
 ---
 
@@ -502,101 +572,153 @@ TCP 3306
 Source: studentapp-backend-sg
 ```
 
-Only backend EC2 instances can connect to the MySQL database.
+The RDS database therefore accepts application database connections from the backend tier.
 
 ---
 
-# Security Group Flow
+# 🔒 Security Group Communication Flow
 
 ```text
 Internet
    |
    | HTTP :80
    v
-Public ALB Security Group
+Public ALB SG
    |
    | HTTP :80
    v
-Frontend Security Group
+Frontend SG
    |
    | TCP :8080
    v
-Internal ALB Security Group
+Internal ALB SG
    |
    | TCP :8080
    v
-Backend Security Group
+Backend SG
    |
    | MySQL :3306
    v
-RDS Security Group
+RDS SG
 ```
 
 ---
 
-# Frontend Tier
+# 🖥 Frontend Tier
 
-The frontend is built using React and served using Nginx.
+The frontend application is built using:
 
-Frontend EC2 instances run inside:
+```text
+React
+Vite
+JavaScript
+```
+
+Nginx is used as the production web server.
+
+Frontend instances run in:
 
 ```text
 frontend-private-1
 frontend-private-2
 ```
 
-They do not require public IP addresses.
+The frontend EC2 instances are not exposed directly to users.
 
-The frontend is exposed through the public Application Load Balancer.
+Users access the frontend through:
 
-Nginx serves the React production build and acts as a reverse proxy for `/api` requests.
-
-Example:
-
-```nginx
-location / {
-    try_files $uri $uri/ /index.html;
-}
-
-location /api/ {
-    proxy_pass http://INTERNAL-BACKEND-ALB:8080/api/;
-}
+```text
+Public Application Load Balancer
 ```
-
-This means the browser does not need direct access to the internal backend ALB.
 
 ---
 
-# Backend Tier
+# Nginx Configuration
 
-The backend is implemented using Spring Boot.
+Nginx performs two important functions:
 
-Backend instances run inside:
+1. Serves the React application.
+2. Proxies `/api` requests to the internal backend ALB.
+
+Example configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name _;
+
+    root /var/www/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://internal-studentapp-backend-alb-1639984916.us-east-1.elb.amazonaws.com:8080/api/;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+The frontend uses:
+
+```text
+VITE_API_URL=/api
+```
+
+This means the browser sends API requests to the same public application endpoint.
+
+Nginx then forwards those requests internally.
+
+---
+
+# ⚙️ Backend Tier
+
+The backend application uses:
+
+```text
+Java
+Spring Boot
+Maven
+Spring Data JPA
+```
+
+Backend EC2 instances run inside:
 
 ```text
 backend-private-1
 backend-private-2
 ```
 
-Spring Boot listens on:
+Application port:
 
 ```text
 8080
 ```
 
-The backend communicates with Amazon RDS MySQL on:
+The backend is not exposed through the public frontend load balancer directly.
+
+Instead:
 
 ```text
-3306
+Frontend EC2
+      ↓
+Internal Backend ALB
+      ↓
+Backend EC2
 ```
-
-The backend is accessed through the internal Application Load Balancer.
 
 ---
 
-# Database Tier
+# 🗄 Amazon RDS MySQL
 
-Amazon RDS MySQL provides persistent application storage.
+Amazon RDS provides persistent database storage.
 
 Configuration:
 
@@ -609,108 +731,135 @@ Storage: 20 GiB gp3
 Public Access: Disabled
 ```
 
-The database uses dedicated private database subnets.
-
-DB subnet group:
+The RDS instance uses:
 
 ```text
 studentapp-db-subnet-group
 ```
 
-Subnets:
+containing:
 
 ```text
 database-private-1
 database-private-2
 ```
 
-The database cannot be directly accessed from the public Internet.
+This keeps the database inside dedicated private database subnets.
 
 ---
 
-# Load Balancers
+# 🔑 Database Credential Management
 
-Two Application Load Balancers are used.
+Database credentials are **not stored directly in this GitHub repository**.
+
+During the project, the application configuration originally contained a hard-coded local database password.
+
+Before pushing the project to GitHub, the configuration was changed to use environment variables:
+
+```properties
+spring.datasource.url=${DB_URL:jdbc:mariadb://localhost:3306/student_db}
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD:}
+```
+
+For the AWS deployment, the database password is stored using:
+
+```text
+AWS Systems Manager Parameter Store
+```
+
+Parameter:
+
+```text
+/studentapp/db/password
+```
+
+The backend retrieves the password during EC2 initialization:
+
+```bash
+DB_PASSWORD=$(aws ssm get-parameter \
+  --name "/studentapp/db/password" \
+  --with-decryption \
+  --region us-east-1 \
+  --query "Parameter.Value" \
+  --output text)
+```
+
+This prevents the production database password from being committed to GitHub.
 
 ---
 
-## Public Frontend Application Load Balancer
+# 👤 IAM Configuration
+
+Backend EC2 instances use:
+
+```text
+studentapp-backend-role
+```
+
+The role allows backend instances to retrieve the required parameter from AWS Systems Manager Parameter Store.
+
+The IAM role is attached to backend EC2 instances through the backend launch template.
+
+---
+
+# ⚖️ Public Frontend Load Balancer
 
 ```text
 Name: studentapp-frontend-alb
+Type: Application Load Balancer
 Scheme: Internet-facing
 Listener: HTTP :80
 ```
 
-Subnets:
+The ALB runs across:
 
 ```text
 public-subnet-1
 public-subnet-2
 ```
 
-Traffic flow:
-
-```text
-Internet
-   ↓
-Frontend ALB
-   ↓
-Frontend Target Group
-   ↓
-Frontend EC2 instances
-```
+It distributes incoming requests between healthy frontend EC2 instances.
 
 ---
 
-## Internal Backend Application Load Balancer
-
-```text
-Name: studentapp-backend-alb
-Scheme: Internal
-Listener: HTTP :8080
-```
-
-Subnets:
-
-```text
-backend-private-1
-backend-private-2
-```
-
-Traffic flow:
-
-```text
-Frontend EC2
-   ↓
-Internal Backend ALB
-   ↓
-Backend Target Group
-   ↓
-Backend EC2 instances
-```
-
-Because this ALB is internal, it is not directly reachable from the public Internet.
-
----
-
-# Target Groups
-
-## Frontend Target Group
+# 🎯 Frontend Target Group
 
 ```text
 Name: studentapp-frontend-tg
 Target Type: Instances
 Protocol: HTTP
 Port: 80
-Health Check: /
+Health Check Path: /
 ```
 
-The target group contains frontend EC2 instances managed by the frontend Auto Scaling Group.
+Two healthy frontend instances are registered through the frontend Auto Scaling Group.
 
 ---
 
-## Backend Target Group
+# ⚖️ Internal Backend Load Balancer
+
+```text
+Name: studentapp-backend-alb
+Type: Application Load Balancer
+Scheme: Internal
+Listener: HTTP :8080
+```
+
+It runs inside:
+
+```text
+backend-private-1
+backend-private-2
+```
+
+The load balancer distributes API requests between backend EC2 instances.
+
+Because its scheme is **Internal**, it is not intended to be directly accessible from the public Internet.
+
+---
+
+# 🎯 Backend Target Group
 
 ```text
 Name: studentapp-backend-tg
@@ -720,17 +869,11 @@ Port: 8080
 Health Check: /api/users
 ```
 
-The target group contains backend EC2 instances managed by the backend Auto Scaling Group.
+The backend Auto Scaling Group maintains the backend instances registered with this target group.
 
 ---
 
-# Auto Scaling
-
-Both application tiers use EC2 Auto Scaling.
-
----
-
-## Frontend Auto Scaling Group
+# 📈 Frontend Auto Scaling Group
 
 ```text
 Name: studentapp-frontend-asg
@@ -747,17 +890,15 @@ frontend-private-1
 frontend-private-2
 ```
 
-The frontend ASG is attached to:
+Target group:
 
 ```text
 studentapp-frontend-tg
 ```
 
-Health checks use ELB health information.
-
 ---
 
-## Backend Auto Scaling Group
+# 📈 Backend Auto Scaling Group
 
 ```text
 Name: studentapp-backend-asg
@@ -774,19 +915,15 @@ backend-private-1
 backend-private-2
 ```
 
-The backend ASG is attached to:
+Target group:
 
 ```text
 studentapp-backend-tg
 ```
 
-Health checks use ELB health information.
-
 ---
 
-# Launch Templates
-
-Separate EC2 launch templates are used for the frontend and backend.
+# 🚀 Launch Templates
 
 ## Frontend Launch Template
 
@@ -796,11 +933,13 @@ studentapp-frontend-lt
 
 Configuration includes:
 
-- Ubuntu 24.04 LTS
-- t3.micro
-- Frontend security group
-- 8 GiB gp3 storage
-- Frontend user-data bootstrap script
+```text
+Ubuntu 24.04 LTS
+t3.micro
+8 GiB gp3
+Frontend Security Group
+Frontend bootstrap script
+```
 
 ---
 
@@ -812,89 +951,28 @@ studentapp-backend-lt
 
 Configuration includes:
 
-- Ubuntu 24.04 LTS
-- t3.micro
-- Backend security group
-- Backend IAM instance profile
-- 8 GiB gp3 storage
-- Backend user-data bootstrap script
-
----
-
-# AWS Systems Manager Parameter Store
-
-The RDS password is not stored in this GitHub repository.
-
-It is stored as a SecureString in AWS Systems Manager Parameter Store.
-
-Parameter:
-
 ```text
-/studentapp/db/password
+Ubuntu 24.04 LTS
+t3.micro
+8 GiB gp3
+Backend Security Group
+Backend IAM Instance Profile
+Backend bootstrap script
 ```
-
-The backend EC2 instance retrieves the value during initialization.
-
-Example:
-
-```bash
-DB_PASSWORD=$(aws ssm get-parameter \
-  --name "/studentapp/db/password" \
-  --with-decryption \
-  --region us-east-1 \
-  --query "Parameter.Value" \
-  --output text)
-```
-
-This prevents database passwords from being committed to source control.
 
 ---
 
-# IAM
+# 📡 REST API
 
-Backend EC2 instances use an IAM role:
+The Spring Boot application provides the following endpoints.
 
-```text
-studentapp-backend-role
-```
-
-The role allows the backend instance to retrieve the required configuration from AWS Systems Manager Parameter Store.
-
-The IAM role is attached to backend EC2 instances through an instance profile configured in the backend launch template.
-
----
-
-# Backend Database Configuration
-
-The repository does not contain production database passwords.
-
-The application can use environment variables for local or external configuration.
-
-Example:
-
-```properties
-spring.datasource.url=${DB_URL:jdbc:mariadb://localhost:3306/student_db}
-spring.datasource.username=${DB_USERNAME:root}
-spring.datasource.password=${DB_PASSWORD:}
-```
-
-During AWS deployment, the EC2 bootstrap process generates the runtime database configuration using the password retrieved from Parameter Store.
-
----
-
-# API Endpoints
-
-The Spring Boot backend provides REST endpoints under `/api`.
-
----
-
-## Get All Students
+## Get Students
 
 ```http
 GET /api/users
 ```
 
-Returns the registered students.
+Returns registered students.
 
 ---
 
@@ -918,234 +996,720 @@ Deletes a student using its ID.
 
 ---
 
-# Frontend Deployment
+# 🚀 Frontend Automatic Deployment
 
-Frontend deployment is automated using:
+Frontend instances use:
 
 ```text
 aws/frontend-user-data.sh
 ```
 
-When a frontend EC2 instance launches, the script performs the following operations:
+During EC2 startup, the script:
 
 1. Updates Ubuntu packages.
 2. Installs Nginx.
 3. Installs Git.
-4. Installs Node.js.
-5. Installs npm.
-6. Clones the GitHub repository.
-7. Opens the frontend project.
-8. Configures:
-
-```text
-VITE_API_URL=/api
-```
-
-9. Installs frontend dependencies.
-10. Builds the React application.
-11. Copies the production build to `/var/www/html`.
-12. Configures Nginx.
+4. Installs Node.js and npm.
+5. Clones the GitHub repository.
+6. Opens the frontend project.
+7. Creates the frontend environment configuration.
+8. Runs `npm install`.
+9. Runs `npm run build`.
+10. Copies the build to `/var/www/html`.
+11. Creates the Nginx configuration.
+12. Configures SPA routing.
 13. Configures `/api` reverse proxying.
-14. Validates the Nginx configuration.
+14. Tests Nginx configuration.
 15. Enables Nginx.
-16. Starts/restarts Nginx.
+16. Starts Nginx.
 
 ---
 
-# Backend Deployment
+# 🚀 Backend Automatic Deployment
 
-Backend deployment is automated using:
+Backend instances use:
 
 ```text
 aws/backend-user-data.sh
 ```
 
-When a backend EC2 instance launches, the script:
+During EC2 startup, the script:
 
-1. Updates Ubuntu packages.
+1. Updates Ubuntu.
 2. Installs Java 17.
 3. Installs Maven.
 4. Installs Git.
 5. Installs AWS CLI.
 6. Clones the GitHub repository.
-7. Retrieves the RDS password from AWS Systems Manager Parameter Store.
-8. Generates the Spring Boot database configuration.
-9. Builds the application using Maven.
-10. Copies the JAR into `/opt/studentapp`.
-11. Creates a systemd service.
-12. Enables the service.
-13. Starts the Spring Boot backend.
+7. Retrieves the RDS password from Parameter Store.
+8. Creates the runtime Spring Boot database configuration.
+9. Builds the backend using Maven.
+10. Creates the application JAR.
+11. Copies the JAR to `/opt/studentapp`.
+12. Creates a systemd service.
+13. Enables the service.
+14. Starts Spring Boot.
 
-The backend listens on:
+---
+
+# ⚙️ Backend systemd Service
+
+The Spring Boot application is managed as a Linux service.
+
+Example:
+
+```ini
+[Unit]
+Description=Student Registration Spring Boot Application
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/opt/studentapp
+ExecStart=/usr/bin/java -jar /opt/studentapp/studentapp.jar
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+This allows the backend application to start automatically when an EC2 instance starts.
+
+---
+
+# 🌐 Custom Domain Configuration
+
+A custom domain was connected after the application deployment was completed.
+
+Domain:
 
 ```text
-8080
+amzon.cyou
+```
+
+Domain registrar:
+
+```text
+NicNames
+```
+
+DNS management:
+
+```text
+Amazon Route 53
 ```
 
 ---
 
-# Application Request Flow
+# Route 53 Hosted Zone
 
-A normal browser request follows this path:
+A public hosted zone was created for:
 
 ```text
-User Browser
-      |
-      | HTTP :80
-      v
+amzon.cyou
+```
+
+Route 53 generated authoritative AWS nameservers.
+
+The domain's nameserver configuration at NicNames was changed to use the Route 53 nameservers.
+
+The resulting DNS architecture is:
+
+```text
+NicNames
+   |
+   | Domain Registration
+   v
+amzon.cyou
+   |
+   | AWS Nameservers
+   v
+Amazon Route 53
+   |
+   v
 Public Frontend ALB
-      |
-      v
-Frontend EC2
-      |
-      | Nginx serves React
-      |
-      | /api request
-      v
-Nginx Reverse Proxy
-      |
-      | HTTP :8080
-      v
-Internal Backend ALB
-      |
-      v
-Backend EC2
-      |
-      | Spring Boot
-      |
-      | MySQL :3306
-      v
-Amazon RDS
 ```
-
-The response travels back through the same application tiers.
 
 ---
 
-# Security Architecture
+# Root Domain Record
 
-The deployment uses several security controls.
-
-## Private Application Instances
-
-Frontend and backend EC2 instances are deployed in private subnets.
-
-They do not need direct inbound Internet access.
-
-## Private Database
-
-Amazon RDS is configured with:
+An Alias A record was created for:
 
 ```text
-Publicly Accessible: No
+amzon.cyou
 ```
 
-## Internal Backend ALB
-
-The backend Application Load Balancer uses the internal scheme.
-
-Therefore, users cannot access the backend ALB directly from the Internet.
-
-## Security Group Referencing
-
-Security groups reference other application security groups instead of exposing internal services publicly.
-
-## Parameter Store
-
-Database credentials are stored outside the Git repository.
-
-## Git Secret Protection
-
-The repository `.gitignore` excludes:
+Configuration:
 
 ```text
-.env
-.env.*
-*.pem
-*.key
-frontend/node_modules/
-frontend/dist/
-backend/target/
-*.jar
+Record name: root / blank
+Record type: A
+Alias: Yes
+Routing policy: Simple
+Region: us-east-1
+Target: studentapp-frontend-alb
 ```
 
-Secrets, private keys, build artifacts, and dependency directories should never be committed.
+This allows:
+
+```text
+http://amzon.cyou
+```
+
+to route directly to the public Application Load Balancer.
 
 ---
 
-# Testing
+# WWW Domain Record
 
-The deployed application was functionally tested after deployment.
+Another Alias A record was created for:
+
+```text
+www.amzon.cyou
+```
+
+Configuration:
+
+```text
+Record name: www
+Record type: A
+Alias: Yes
+Routing policy: Simple
+Region: us-east-1
+Target: studentapp-frontend-alb
+```
+
+Therefore both:
+
+```text
+http://amzon.cyou
+```
+
+and:
+
+```text
+http://www.amzon.cyou
+```
+
+route to the frontend Application Load Balancer.
+
+---
+
+# 🌐 Final Domain Architecture
+
+```text
+                   NicNames
+              Domain Registrar
+                    |
+                    v
+               amzon.cyou
+                    |
+              AWS Nameservers
+                    |
+                    v
+              Amazon Route 53
+                    |
+                    v
+          Public Frontend ALB
+                    |
+              HTTP Port 80
+                    |
+           +--------+--------+
+           |                 |
+           v                 v
+     Frontend EC2       Frontend EC2
+           |                 |
+           +--------+--------+
+                    |
+                 /api
+                    |
+                    v
+          Internal Backend ALB
+                    |
+           +--------+--------+
+           |                 |
+           v                 v
+      Backend EC2       Backend EC2
+           |                 |
+           +--------+--------+
+                    |
+                    v
+              Amazon RDS
+```
+
+---
+
+# 🔓 Current HTTP Configuration
+
+The current deployment uses:
+
+```text
+HTTP :80
+```
+
+HTTPS was intentionally not configured during the current implementation.
+
+Current application addresses:
+
+```text
+http://amzon.cyou
+http://www.amzon.cyou
+```
+
+HTTPS can be added later using:
+
+```text
+AWS Certificate Manager (ACM)
+        ↓
+SSL/TLS Certificate
+        ↓
+Public ALB HTTPS Listener :443
+        ↓
+HTTP :80 → HTTPS :443 Redirect
+```
+
+---
+
+# 🧪 Functional Testing
+
+The complete application was tested after deployment.
+
+---
 
 ## Frontend Test
 
-The public frontend ALB successfully returned the React application.
+The React frontend successfully loaded through the public Application Load Balancer.
+
+---
 
 ## Registration Test
 
-A student was registered through the frontend.
+A student was registered using the frontend.
 
-The frontend sent the request through:
+Request path:
 
 ```text
-Frontend
+Browser
+   ↓
+Frontend ALB
+   ↓
+Frontend EC2
    ↓
 Nginx /api
    ↓
-Internal Backend ALB
+Backend ALB
    ↓
-Spring Boot
+Backend EC2
    ↓
 RDS
 ```
 
 The registration completed successfully.
 
-## Database Persistence Test
+---
 
-The RDS database was queried after registration.
+## Database Verification
 
-The registered student existed in the `user` table.
+The database was connected to using a temporary setup EC2 instance.
 
-The application was refreshed and the record remained available, confirming database persistence.
+The following database was selected:
 
-## Read Test
+```sql
+USE student_db;
+```
+
+Tables were checked:
+
+```sql
+SHOW TABLES;
+```
+
+Student data was verified using:
+
+```sql
+SELECT * FROM user;
+```
+
+The registered student was successfully stored in Amazon RDS.
+
+---
+
+## Persistence Test
+
+The frontend page was refreshed.
+
+The registered student remained available.
+
+This confirmed that the application was using persistent RDS storage rather than temporary EC2 storage.
+
+---
+
+## GET Test
 
 ```http
 GET /api/users
 ```
 
-successfully returned student records.
+successfully returned registered students.
 
-## Delete Test
+---
 
-A student was deleted through the frontend.
+## DELETE Test
 
 ```http
 DELETE /api/users/{id}
 ```
 
-completed successfully.
+was tested through the frontend.
 
-## Load Balancer Health
-
-Both frontend target-group instances reached a healthy state.
-
-Both backend target-group instances reached a healthy state.
+The student was successfully deleted.
 
 ---
 
-# Local Development
+## Backend Health Test
 
-## Backend
+The backend target group used:
+
+```text
+/api/users
+```
+
+as its health-check endpoint.
+
+Both backend targets reached:
+
+```text
+Healthy
+```
+
+---
+
+## Frontend Health Test
+
+The frontend target group used:
+
+```text
+/
+```
+
+as its health-check path.
+
+Both frontend targets reached:
+
+```text
+Healthy
+```
+
+---
+
+# 🛠 Problems Encountered and Solutions
+
+Several real deployment issues were encountered while building this project.
+
+---
+
+## 1. RDS Configuration / Cost and Free-Tier Considerations
+
+While creating Amazon RDS, the available RDS configuration and cost/free-tier considerations had to be reviewed before proceeding.
+
+The final database configuration used:
+
+```text
+MySQL
+db.t4g.micro
+20 GiB gp3
+Private access
+```
+
+The database was placed in dedicated private database subnets rather than exposing it publicly.
+
+This highlighted the importance of checking AWS pricing and current account eligibility rather than assuming every resource configuration is free.
+
+---
+
+## 2. Secure Database Password Storage
+
+A database password should not be stored directly in:
+
+```text
+application.properties
+```
+
+or committed to GitHub.
+
+To solve this, AWS Systems Manager Parameter Store was used.
+
+Parameter:
+
+```text
+/studentapp/db/password
+```
+
+The backend EC2 instance retrieves the password at startup using its IAM role.
+
+---
+
+## 3. Hard-Coded Password Found Before GitHub Push
+
+Before uploading the project to GitHub, the backend source code was checked for credentials.
+
+A hard-coded local database password was discovered in:
+
+```text
+backend/src/main/resources/application.properties
+```
+
+Instead of committing it, the configuration was changed to:
+
+```properties
+spring.datasource.url=${DB_URL:jdbc:mariadb://localhost:3306/student_db}
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD:}
+```
+
+A secret scan was performed before the final Git push.
+
+---
+
+## 4. Frontend Target Initially Unhealthy
+
+After frontend EC2 instances were launched through the Auto Scaling Group, the frontend target group initially reported unhealthy targets.
+
+The EC2 user-data/cloud-init logs were inspected.
+
+The logs showed that the instances were still:
+
+```text
+Installing packages
+Installing npm dependencies
+Building the frontend
+Configuring Nginx
+```
+
+Nginx eventually started successfully.
+
+After initialization completed, both targets automatically became:
+
+```text
+Healthy
+```
+
+This demonstrated that a newly launched instance may temporarily fail health checks while its bootstrap script is still running.
+
+---
+
+## 5. Private EC2 Instances Needed Internet Access
+
+Frontend and backend instances were intentionally placed inside private subnets.
+
+However, they still needed outbound Internet access for:
+
+```text
+apt
+GitHub
+npm
+Maven
+AWS APIs
+```
+
+A NAT Gateway was therefore created in a public subnet.
+
+The private application route table was configured with:
+
+```text
+0.0.0.0/0 -> NAT Gateway
+```
+
+This provided outbound connectivity while keeping application instances private.
+
+---
+
+## 6. Backend Should Not Be Public
+
+Instead of exposing Spring Boot directly to the Internet, an internal Application Load Balancer was created.
+
+The resulting path became:
+
+```text
+Frontend EC2
+     ↓
+Internal Backend ALB
+     ↓
+Backend EC2
+```
+
+The backend load balancer therefore remains within the VPC.
+
+---
+
+## 7. Browser Could Not Directly Use an Internal Backend Endpoint
+
+Because the backend ALB is internal, a user's browser should not be expected to connect directly to it.
+
+Nginx was configured as a reverse proxy.
+
+Frontend:
+
+```text
+VITE_API_URL=/api
+```
+
+Nginx:
+
+```text
+/api
+  ↓
+Internal Backend ALB
+```
+
+This allows users to interact with the API through the public frontend endpoint while backend communication remains internal.
+
+---
+
+## 8. Temporary Setup EC2 Was No Longer Required
+
+A temporary EC2 instance was used during setup and database connectivity testing.
+
+After the complete frontend → backend → RDS flow was verified, the setup instance was no longer required.
+
+It was terminated to avoid leaving unnecessary infrastructure running.
+
+---
+
+## 9. GitHub Repository Preparation
+
+A new repository was created:
+
+```text
+student-registration-aws
+```
+
+Before pushing:
+
+1. The old `.git` history was removed.
+2. A new Git repository was initialized.
+3. The branch was changed to `main`.
+4. The new GitHub remote was configured.
+5. Credentials were checked.
+6. `.gitignore` was created.
+7. AWS deployment scripts were added.
+8. README documentation was created.
+9. Files were committed.
+10. The project was pushed to GitHub.
+
+---
+
+# 🔐 Git Security
+
+The `.gitignore` prevents common sensitive or generated files from being committed.
+
+```gitignore
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Backend
+backend/target/
+*.jar
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+```
+
+---
+
+# 📦 GitHub Repository
+
+Repository:
+
+```text
+https://github.com/mukitshaikh/student-registration-aws
+```
+
+The repository contains:
+
+```text
+Frontend source
+Backend source
+AWS scripts
+.gitignore
+README documentation
+```
+
+---
+
+# 🔐 Security Features
+
+The project implements multiple security controls:
+
+- Frontend EC2 instances in private subnets
+- Backend EC2 instances in private subnets
+- RDS in private database subnets
+- RDS public access disabled
+- Internal backend Application Load Balancer
+- Tier-specific Security Groups
+- Security Group references instead of broad internal public access
+- Database password stored outside Git
+- AWS Systems Manager Parameter Store
+- IAM role for backend EC2
+- `.gitignore` for sensitive files
+- No PEM/private keys committed
+- No production database password committed
+
+---
+
+# 💰 AWS Cost Considerations
+
+Some components used by this architecture may generate AWS charges.
+
+Examples include:
+
+```text
+NAT Gateway
+Application Load Balancers
+Amazon RDS
+EC2 instances
+Elastic IP-related usage
+Data transfer
+Route 53 hosted zone
+```
+
+AWS Free Tier eligibility depends on the AWS account, resource type, configuration, and current AWS pricing/free-tier rules.
+
+Resources should be stopped or deleted when they are no longer required for the project.
+
+---
+
+# 💻 Local Backend Development
 
 Requirements:
 
-- Java 17+
-- Maven
-- MySQL/MariaDB
+```text
+Java 17+
+Maven
+MySQL/MariaDB
+```
 
-Configure environment variables:
+Configure:
 
 ```bash
 export DB_URL="jdbc:mariadb://localhost:3306/student_db"
@@ -1153,114 +1717,47 @@ export DB_USERNAME="root"
 export DB_PASSWORD="YOUR_LOCAL_PASSWORD"
 ```
 
-Move into the backend:
+Run:
 
 ```bash
 cd backend
+mvn spring-boot:run
+```
+
+---
+
+# 💻 Local Frontend Development
+
+Requirements:
+
+```text
+Node.js
+npm
 ```
 
 Run:
 
 ```bash
-mvn spring-boot:run
-```
-
-The backend is available on the configured Spring Boot port.
-
----
-
-## Frontend
-
-Requirements:
-
-- Node.js
-- npm
-
-Move into:
-
-```bash
 cd frontend
-```
-
-Install dependencies:
-
-```bash
 npm install
+npm run dev
 ```
 
-Create a local `.env` file if required:
+For local development, create a local `.env` when required:
 
 ```text
 VITE_API_URL=http://localhost:8080/api
 ```
 
-Start the development server:
-
-```bash
-npm run dev
-```
+The `.env` file should not be committed.
 
 ---
 
-# AWS Deployment Scripts
-
-The repository contains two EC2 initialization scripts.
-
-```text
-aws/
-├── backend-user-data.sh
-└── frontend-user-data.sh
-```
-
-## `backend-user-data.sh`
-
-Responsible for:
-
-- Backend dependency installation
-- Repository cloning
-- Parameter Store retrieval
-- Spring Boot configuration
-- Maven build
-- JAR deployment
-- systemd service configuration
-
-## `frontend-user-data.sh`
-
-Responsible for:
-
-- Frontend dependency installation
-- Repository cloning
-- React production build
-- Nginx configuration
-- SPA routing
-- Backend reverse proxy configuration
-
----
-
-# Availability Design
-
-Application resources are distributed across:
-
-```text
-us-east-1a
-us-east-1b
-```
-
-The frontend ASG maintains two frontend instances.
-
-The backend ASG maintains two backend instances.
-
-Application Load Balancers distribute requests between healthy instances registered with their respective target groups.
-
-This design reduces dependence on a single application EC2 instance or a single application Availability Zone.
-
----
-
-# Infrastructure Summary
+# 📊 Infrastructure Summary
 
 | Component | Configuration |
 |---|---|
-| AWS Region | us-east-1 |
+| Region | us-east-1 |
 | VPC | studentapp-vpc |
 | VPC CIDR | 10.0.0.0/16 |
 | Availability Zones | 2 |
@@ -1277,106 +1774,239 @@ This design reduces dependence on a single application EC2 instance or a single 
 | Backend Target Group | studentapp-backend-tg |
 | Frontend ASG | studentapp-frontend-asg |
 | Backend ASG | studentapp-backend-asg |
-| Frontend ASG Capacity | Min 2 / Desired 2 / Max 4 |
-| Backend ASG Capacity | Min 2 / Desired 2 / Max 4 |
+| Frontend Capacity | Min 2 / Desired 2 / Max 4 |
+| Backend Capacity | Min 2 / Desired 2 / Max 4 |
 | Frontend Port | 80 |
 | Backend Port | 8080 |
 | Database Port | 3306 |
 | Database | Amazon RDS MySQL |
 | Database Name | student_db |
 | RDS Public Access | Disabled |
-| Secret Storage | AWS Systems Manager Parameter Store |
+| Secret Storage | AWS SSM Parameter Store |
+| DNS | Amazon Route 53 |
+| Registrar | NicNames |
+| Custom Domain | amzon.cyou |
+| WWW Domain | www.amzon.cyou |
+| Current Protocol | HTTP |
+| Source Control | GitHub |
 
 ---
 
-# Deployment Flow
+# 📚 What I Learned
+
+This project provided practical experience with:
+
+- Designing a multi-tier AWS architecture
+- Creating custom VPC networks
+- CIDR planning
+- Public and private subnet design
+- Route-table configuration
+- Internet Gateway configuration
+- NAT Gateway configuration
+- EC2 deployment
+- Launch Templates
+- Auto Scaling Groups
+- Application Load Balancers
+- Internal vs internet-facing load balancers
+- Target groups
+- Health checks
+- Security Group referencing
+- Amazon RDS
+- Private database deployment
+- Spring Boot deployment
+- React production deployment
+- Nginx configuration
+- Reverse proxy configuration
+- IAM roles
+- AWS Systems Manager Parameter Store
+- Protecting credentials
+- Git/GitHub
+- Custom domains
+- Route 53
+- DNS nameservers
+- Alias records
+- Troubleshooting unhealthy targets
+- Testing frontend-to-database communication
+
+---
+
+# 🚧 Future Improvements
+
+Possible future improvements include:
+
+### HTTPS
+
+Add an SSL/TLS certificate using:
 
 ```text
-GitHub Repository
-       |
-       +-----------------------------+
-       |                             |
-       v                             v
-Frontend Launch Template      Backend Launch Template
-       |                             |
-       v                             v
-Frontend Auto Scaling         Backend Auto Scaling
-       |                             |
-       v                             v
-Frontend EC2                  Backend EC2
-       |                             |
-       v                             v
-React + Nginx                 Spring Boot
-       |                             |
-       +---------- API --------------+
-                                     |
-                                     v
-                                Amazon RDS
+AWS Certificate Manager
+```
+
+and configure:
+
+```text
+HTTPS :443
+```
+
+on the frontend ALB.
+
+HTTP requests could then redirect automatically to HTTPS.
+
+---
+
+### CI/CD
+
+Implement GitHub Actions so that application changes can automatically:
+
+```text
+Build
+Test
+Deploy
 ```
 
 ---
 
-# Important Security Note
+### Infrastructure as Code
 
-No real database passwords, private keys, PEM files, access keys, or other secrets should be committed to this repository.
-
-Production credentials should be stored using AWS-managed secret/configuration services such as AWS Systems Manager Parameter Store or AWS Secrets Manager and accessed through appropriately scoped IAM permissions.
-
-If a credential is accidentally committed, removing it from the latest file alone is not sufficient. The credential should be rotated and the repository history reviewed.
-
----
-
-# Future Improvements
-
-Possible improvements include:
-
-- HTTPS using AWS Certificate Manager
-- Custom domain using Amazon Route 53
-- HTTP-to-HTTPS redirection
-- AWS Secrets Manager
-- More restrictive IAM policies
-- CloudWatch monitoring and alarms
-- Auto Scaling policies based on CPU or request load
-- CI/CD using GitHub Actions
-- AWS WAF
-- Infrastructure as Code using Terraform or AWS CloudFormation
-- Automated application testing
-- Centralized application logging
-
----
-
-# Conclusion
-
-This project demonstrates the deployment of a full-stack application using a multi-tier AWS architecture.
-
-The final request path is:
+Recreate the infrastructure using:
 
 ```text
-Internet
-   ↓
+Terraform
+```
+
+or:
+
+```text
+AWS CloudFormation
+```
+
+---
+
+### Monitoring
+
+Add:
+
+```text
+Amazon CloudWatch
+CloudWatch Logs
+CloudWatch Alarms
+```
+
+---
+
+### Auto Scaling Policies
+
+Configure dynamic scaling based on metrics such as:
+
+```text
+CPU utilization
+ALB request count
+```
+
+---
+
+### AWS WAF
+
+AWS WAF could be attached to the public ALB for additional web-application protection.
+
+---
+
+### IAM Hardening
+
+IAM permissions can be further restricted so the backend role can access only the specific Parameter Store parameter required by the application.
+
+---
+
+# 🏁 Final Result
+
+The completed deployment provides the following application path:
+
+```text
+http://amzon.cyou
+        |
+        v
+Amazon Route 53
+        |
+        v
 Public Application Load Balancer
-   ↓
+        |
+        v
 Frontend Auto Scaling Group
-   ↓
+        |
+        v
 React + Nginx
-   ↓
+        |
+        | /api
+        v
 Internal Application Load Balancer
-   ↓
+        |
+        v
 Backend Auto Scaling Group
-   ↓
+        |
+        v
 Spring Boot
-   ↓
+        |
+        v
 Amazon RDS MySQL
 ```
 
-The architecture separates public, frontend, backend, and database resources into dedicated network tiers and uses load balancing, Auto Scaling, private networking, security groups, IAM, and Parameter Store to operate the application.
+The application successfully supports:
+
+```text
+Student Registration   ✅
+View Students          ✅
+Database Persistence   ✅
+Delete Student         ✅
+Frontend Load Balancing ✅
+Backend Load Balancing  ✅
+Private RDS             ✅
+Auto Scaling Groups     ✅
+Secure Password Storage ✅
+Custom Domain           ✅
+GitHub Repository       ✅
+```
 
 ---
 
-# Author
+# 👨‍💻 Author
 
 **Mukit Shaikh**
 
-GitHub: [mukitshaikh](https://github.com/mukitshaikh)
+GitHub:
 
-Repository: [student-registration-aws](https://github.com/mukitshaikh/student-registration-aws)
+```text
+https://github.com/mukitshaikh
+```
+
+Project Repository:
+
+```text
+https://github.com/mukitshaikh/student-registration-aws
+```
+
+Live Application:
+
+```text
+http://amzon.cyou
+```
+
+```text
+http://www.amzon.cyou
+```
+
+---
+
+## ⭐ Project Status
+
+```text
+AWS Infrastructure     : Completed
+Frontend Deployment    : Completed
+Backend Deployment     : Completed
+RDS Integration        : Completed
+Load Balancing         : Completed
+Auto Scaling           : Completed
+Functional Testing     : Completed
+GitHub Documentation   : Completed
+Custom Domain          : Configured
+HTTPS / SSL            : Future Improvement
+```
